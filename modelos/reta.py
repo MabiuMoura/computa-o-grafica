@@ -13,5 +13,5 @@ def modelar_linha(tamanho=4, direcao=np.array([1, 0, 0]), origem=np.array([0, 0,
     direcao = direcao / np.linalg.norm(direcao)  # normaliza a direção
     ponto_final = origem + direcao * tamanho
 
-    vertices = [origem.tolist(), ponto_final.tolist()]
-    return vertices
+    self.vertices = [origem.tolist(), ponto_final.tolist()]
+    return self.vertices

@@ -1,12 +1,12 @@
 import math
 
-def modelar_cilindro(raio, altura, resolucao=32):
+def modelar_cilindro(self, raio, altura, resolucao=32):
     """
     Modela um cilindro com base no raio e altura.
-    Retorna listas de vértices e faces triangulares.
+    Retorna listas de vértices e self.faces triangulares.
     """
-    vertices = []
-    faces = []
+    self.vertices = []
+    self.faces = []
 
     # Gera os pontos ao redor da base e topo
     for i in range(resolucao):
@@ -17,8 +17,8 @@ def modelar_cilindro(raio, altura, resolucao=32):
         x = raio * cos_t
         y = raio * sin_t
 
-        vertices.append([x, y, 0])         # base
-        vertices.append([x, y, altura])    # topo
+        self.vertices.append([x, y, 0])         # base
+        self.vertices.append([x, y, altura])    # topo
 
     # Conecta laterais e tampas
     for i in range(resolucao):
@@ -28,13 +28,13 @@ def modelar_cilindro(raio, altura, resolucao=32):
         i_topo_next = (i_base_next + 1) % (resolucao * 2)
 
         # Lateral
-        faces.append([vertices[i_base], vertices[i_base_next], vertices[i_topo_next]])
-        faces.append([vertices[i_base], vertices[i_topo_next], vertices[i_topo]])
+        self.faces.append([self.vertices[i_base], self.vertices[i_base_next], self.vertices[i_topo_next]])
+        self.faces.append([self.vertices[i_base], self.vertices[i_topo_next], self.vertices[i_topo]])
 
         # Tampa inferior
-        faces.append([[0, 0, 0], vertices[i_base_next], vertices[i_base]])
+        self.faces.append([[0, 0, 0], self.vertices[i_base_next], self.vertices[i_base]])
 
         # Tampa superior
-        faces.append([[0, 0, altura], vertices[i_topo], vertices[i_topo_next]])
+        self.faces.append([[0, 0, altura], self.vertices[i_topo], self.vertices[i_topo_next]])
 
-    return vertices, faces
+    return self.vertices, self.faces

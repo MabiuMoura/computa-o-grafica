@@ -88,3 +88,135 @@ def normalizar_cena(vertices, limite=10.0):
         print(f"[INFO] Normalizando cena com fator {fator:.3f}")
         return [ (np.array(v) * fator).tolist() for v in vertices ]
     return vertices  # já está dentro do limite
+
+
+def aplicar_escala(vertices, sx, sy, sz):
+    """
+    Aplica escala nos vértices de um objeto 3D.
+    
+    Parâmetros:
+    - vertices: lista de vértices [[x, y, z], ...]
+    - sx, sy, sz: fatores de escala nos eixos X, Y e Z
+    """
+    matriz_escala = np.array([
+        [sx,  0,  0],
+        [0,  sy,  0],
+        [0,   0, sz]
+    ])
+
+    vertices_escalados = [matriz_escala @ np.array(v) for v in vertices]
+    return vertices_escalados
+
+def aplicar_translacao(vertices, indice_vertice, destino):
+    """
+    Translada todos os vértices de um objeto 3D para que
+    o vértice de índice `indice_vertice` vá para a posição `destino`.
+
+    Parâmetros:
+    - vertices: lista de vértices [[x, y, z], ...]
+    - indice_vertice: índice do vértice de referência a ser movido
+    - destino: coordenadas [dx, dy, dz] para onde o vértice deve ir
+    """
+    origem = np.array(vertices[indice_vertice])
+    destino = np.array(destino)
+    deslocamento = destino - origem
+
+    vertices_transladados = [np.array(v) + deslocamento for v in vertices]
+    return vertices_transladados
+
+
+def aplicar_rotacao(vertices, eixo, angulo_graus):
+    """
+    Rotaciona os vértices de um objeto 3D em torno do eixo especificado.
+
+    Parâmetros:
+    - vertices: lista de vértices [[x, y, z], ...]
+    - eixo: 'x', 'y' ou 'z'
+    - angulo_graus: ângulo de rotação em graus
+    """
+    ang = np.radians(angulo_graus)
+
+    if eixo == 'x':
+        matriz_rot = np.array([
+            [1, 0, 0],
+            [0, np.cos(ang), -np.sin(ang)],
+            [0, np.sin(ang),  np.cos(ang)]
+        ])
+    elif eixo == 'y':
+        matriz_rot = np.array([
+            [np.cos(ang), 0, np.sin(ang)],
+            [0, 1, 0],
+            [-np.sin(ang), 0, np.cos(ang)]
+        ])
+    elif eixo == 'z':
+        matriz_rot = np.array([
+            [np.cos(ang), -np.sin(ang), 0],
+            [np.sin(ang),  np.cos(ang), 0],
+            [0, 0, 1]
+        ])
+    else:
+        raise ValueError("Eixo inválido. Use 'x', 'y' ou 'z'.")
+
+    vertices_rotacionados = [matriz_rot @ np.array(v) for v in vertices]
+    return vertices_rotacionados
+
+
+def normalizar_solido(vertices, destino=[0, 0, 0], limite=10):
+    """
+    Normaliza os vértices de um sólido para que caibam dentro de um espaço de tamanho máximo 'limite'.
+    Depois, translada o sólido para a posição 'destino'.
+
+    Parâmetros:
+    - vertices: lista de vértices [[x, y, z], ...]
+    - destino: ponto para o qual o centro do objeto deve ser transladado
+    - limite: valor máximo permitido em qualquer coordenada (default = 10)
+
+    Retorna:
+    - lista de vértices transformados
+    """
+    v = np.array(vertices)
+
+    # 1. Centralizar o objeto na origem
+    centro = np.mean(v, axis=0)
+    centralizado = v - centro
+
+    # 2. Calcular o maior valor absoluto das coordenadas
+    max_coord = np.max(np.abs(centralizado))
+
+    # 3. Calcular escala para caber no espaço [-limite/2, limite/2]
+    fator_escala = (limite / 2.0) / max_coord if max_coord != 0 else 1
+    escalado = centralizado * fator_escala
+
+    # 4. Transladar para o destino
+    destino = np.array(destino)
+    final = escalado + destino
+
+    return final.tolist()
+
+def faces_para_indices(faces_em_vertices, lista_vertices_transformados, tolerancia=1e-6):
+    """
+    Converte faces definidas por vértices em faces por índices,
+    comparando com a lista de vértices transformados usando np.allclose.
+
+    faces_em_vertices: List[List[List[float]]]
+    lista_vertices_transformados: List[List[float]]
+    """
+    faces_com_indices = []
+
+    lista_vertices_np = [np.array(v) for v in lista_vertices_transformados]
+
+    for face in faces_em_vertices:
+        indices = []
+        for vertice in face:
+            vertice = np.array(vertice)
+            encontrado = False
+            for i, v_ref in enumerate(lista_vertices_np):
+                if np.allclose(vertice, v_ref, atol=tolerancia):
+                    indices.append(i)
+                    encontrado = True
+                    break
+            if not encontrado:
+                raise ValueError(f"Vértice {vertice.tolist()} não encontrado na lista transformada.")
+        faces_com_indices.append(indices)
+
+    return faces_com_indices

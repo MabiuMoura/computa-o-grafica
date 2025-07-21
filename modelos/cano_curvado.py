@@ -4,11 +4,9 @@ from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 from utils import curva_hermite
 
 
-def gerar_cano_curvado(P0, P1, T0, T1, raio=0.2, resolucao_circular=16, resolucao_curva=100):
+def gerar_cano_curvado(self, P0, P1, T0, T1, raio=0.2, resolucao_circular=16, resolucao_curva=100):
     
     curva = curva_hermite(P0, P1, T0, T1, resolucao_curva)
-    vertices = []
-    faces = []
 
     for i in range(resolucao_curva):
         ponto = curva[i]
@@ -33,9 +31,9 @@ def gerar_cano_curvado(P0, P1, T0, T1, raio=0.2, resolucao_circular=16, resoluca
             ang = 2 * np.pi * j / resolucao_circular
             desloc = raio * (np.cos(ang) * orto1 + np.sin(ang) * orto2)
             vertice = ponto + desloc
-            vertices.append(vertice.tolist())
+            self.vertices.append(vertice.tolist())
 
-    # Conecta os anéis de pontos com faces triangulares
+    # Conecta os anéis de pontos com self.faces triangulares
     for i in range(resolucao_curva - 1):
         for j in range(resolucao_circular):
             i1 = i * resolucao_circular + j
@@ -44,7 +42,7 @@ def gerar_cano_curvado(P0, P1, T0, T1, raio=0.2, resolucao_circular=16, resoluca
             i4 = (i + 1) * resolucao_circular + (j + 1) % resolucao_circular
 
             # Dois triângulos por "quadrado"
-            faces.append([vertices[i1], vertices[i3], vertices[i4]])
-            faces.append([vertices[i1], vertices[i4], vertices[i2]])
+            self.faces.append([self.vertices[i1], self.vertices[i3], self.vertices[i4]])
+            self.faces.append([self.vertices[i1], self.vertices[i4], self.vertices[i2]])
 
-    return vertices, faces
+    return self.vertices, self.faces
