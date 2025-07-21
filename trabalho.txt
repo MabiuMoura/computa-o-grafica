@@ -1,0 +1,30 @@
+1) Modele os seguintes sólidos/objetos 
+a. cano reto, definida usando uma base em um raio e comprimento. 
+
+b. cano curvado, definida usando uma base em um raio e uma curva (Bezier ou Hermite). 
+
+c. cilindro, com base no raio da base e na altura; 
+
+d. paralelepípedo (hiper retângulo) com base, altura e comprimento; 
+
+e. linha reta, de tamanho 4; 
+
+f. para cada um dos sólidos acima (com exceção da reta) crie uma malha de polígonos (triângulos) usando algum 
+algoritmo próprio (como visto em sala) ou o algoritmo marching cubes (não precisa implementar esse
+algoritmo, basta usar de alguma API). 
+
+Na construção dos sólidos, crie uma função que retorne o sólido ( ou seja, retorne a matriz
+de vértices e arestas). Perceba que cada objeto é descrito indiretamente (no caso do cone, por exemplo,
+pelo raio e pela altura). A origem do objeto pode ser definida de forma fixa dentro da função ou, opcionalmente,
+pode ser passada também como parâmetro da função. 
+
+
+2) Componha uma cena contendo os diversos sólidos modelados anteriormente em um sistema de coordenadas do mundo, de tal maneira a não haver sobreposição ou intersecção entre tais objetos, usando transformações em escala, rotação e translação. 
+a. O maior valor possível para cada uma das componentes de um vértice deve ser igual a 10. Se necessário, aplique transformações em escala para que os sólidos sejam localizados respeitando tais limites. 
+b. Mostre os diversos sólidos neste sistema de coordenadas em 3D. 
+3) Escolha um ponto como origem para o sistema de coordenadas da câmera. a. Compute a base vetorial do novo sistema de coordenadas. 
+b. Transforme os objetos do sistema de coordenadas do mundo para o sistema de coordenadas da câmera. 
+c. Mostre os diversos sólidos neste sistema de coordenadas em 3D. d. Coloque um ponto informando a origem do sistema de coordenadas do mundo. 
+4) Faça uma transformação de projeção em perspectiva dos sólidos contidos no volume de visão e, para isto, projete os sólidos em 2 dimensões na janela de projeção. Cada sólido deve conter arestas com mesma cor, mas sólidos diferentes devem ter cores diferentes. 
+a. Apresente tais objetos em 2D.
+5) Rasterize os objetos (poligonos) em pelo menos 3 resoluções diferentes. 
