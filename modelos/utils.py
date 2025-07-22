@@ -2,19 +2,12 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import numpy as np
 
-def plotar_malha_3d(vertices, faces, titulo="Objeto 3D", cor="orange", borda="black", alpha=0.9, linewidth=0.3,
-                    ponto_destaque=None, eixos=None, vetor_olhar=None):
-    """
-    Plota uma malha 3D com destaques opcionais.
-
-    - ponto_destaque: ponto especial para marcar (ex: origem do mundo).
-    - eixos: dicionário com vetores u, v, w.
-    - vetor_olhar: tupla (origem, destino) para desenhar vetor de olhar da câmera.
-    """
+def plotar_malha_3d(vertices, faces, titulo="Objeto 3D", cor="orange", borda="black", alpha=0.9, linewidth=0.3):
     fig = plt.figure(figsize=(8, 6))
     ax = fig.add_subplot(111, projection='3d')
 
-    mesh = Poly3DCollection(faces, facecolor=cor, edgecolor=borda, linewidths=linewidth, alpha=alpha)
+    triangulos = [[vertices[i] for i in face] for face in faces]  # espera listas puras
+    mesh = Poly3DCollection(triangulos, facecolor=cor, edgecolor=borda, linewidths=linewidth, alpha=alpha)
     ax.add_collection3d(mesh)
 
     x_vals = [v[0] for v in vertices]
@@ -31,30 +24,45 @@ def plotar_malha_3d(vertices, faces, titulo="Objeto 3D", cor="orange", borda="bl
     ax.set_zlabel("Z")
     ax.set_title(titulo)
 
-    if ponto_destaque:
-        ax.scatter(*ponto_destaque, color='red', s=50)
-        ax.text(*ponto_destaque, "Origem do Mundo", color='red')
+    plt.tight_layout()
+    plt.show()
 
-    if eixos:
-        origem = [0, 0, 0]
-        u, v, w = eixos['u'], eixos['v'], eixos['w']
-        ax.quiver(*origem, *u, length=1.0, color='blue', normalize=True)
-        ax.text(*u, "u", color='blue')
-        ax.quiver(*origem, *v, length=1.0, color='green', normalize=True)
-        ax.text(*v, "v", color='green')
-        ax.quiver(*origem, *w, length=1.0, color='red', normalize=True)
-        ax.text(*w, "w", color='red')
 
-    # Desenhar vetor de olhar da câmera
-    if vetor_olhar:
-        origem, destino = vetor_olhar
-        direcao = np.array(destino) - np.array(origem)
-        ax.quiver(*origem, *direcao, length=1.0, color='purple', normalize=True)
-        ax.text(*destino, "Olhar", color='purple')
+def plotar_malhas_3d_multiplos(objetos, titulo="Cena 3D"):
+    """
+    Plota múltiplas malhas 3D em uma única figura.
+    
+    Parâmetro:
+    - objetos: lista de tuplas no formato (vertices, faces, cor, nome)
+    """
+    fig = plt.figure(figsize=(10, 8))
+    ax = fig.add_subplot(111, projection='3d')
+
+    for vertices, faces, cor, nome in objetos:
+        mesh = Poly3DCollection([ [vertices[int(i)] for i in face] for face in faces ],
+                                facecolor=cor, edgecolor="black", linewidths=0.3, alpha=0.9, label=nome)
+        ax.add_collection3d(mesh)
+
+    # Coletar todos os pontos para ajuste automático de eixos
+    todos_vertices = np.concatenate([np.array(v) for v, _, _, _ in objetos])
+    x_vals = todos_vertices[:, 0]
+    y_vals = todos_vertices[:, 1]
+    z_vals = todos_vertices[:, 2]
+
+    margem = 0.5
+    ax.set_xlim([x_vals.min() - margem, x_vals.max() + margem])
+    ax.set_ylim([y_vals.min() - margem, y_vals.max() + margem])
+    ax.set_zlim([z_vals.min() - margem, z_vals.max() + margem])
+
+    ax.set_xlabel("X")
+    ax.set_ylabel("Y")
+    ax.set_zlabel("Z")
+    ax.set_title(titulo)
 
     plt.tight_layout()
     plt.show()
-    
+
+
     
 def curva_hermite(P0, P1, T0, T1, n=100):
     """Gera pontos em uma curva de Hermite cúbica"""

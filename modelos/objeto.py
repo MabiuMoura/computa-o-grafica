@@ -10,63 +10,107 @@ class Objeto3D:
         self.resolucao = None
         self.resolucao_circular = None
         self.resolucao_curva = None
+        self.faces_externas = []
+        self.faces_internas = []
     
     def atribuir_faces(self):
         self.faces = []
 
         if self.forma == "paralelepipedo":
-            self.faces = [
-                # Base inferior
-                [self.vertices[0], self.vertices[1], self.vertices[2]],
-                [self.vertices[0], self.vertices[2], self.vertices[3]],
-                
-                # Base superior
-                [self.vertices[4], self.vertices[5], self.vertices[6]],
-                [self.vertices[4], self.vertices[6], self.vertices[7]],
-                
-                # Frente
-                [self.vertices[0], self.vertices[1], self.vertices[5]],
-                [self.vertices[0], self.vertices[5], self.vertices[4]],
-                
-                # Trás
-                [self.vertices[2], self.vertices[3], self.vertices[7]],
-                [self.vertices[2], self.vertices[7], self.vertices[6]],
-                
-                # Direita
-                [self.vertices[1], self.vertices[2], self.vertices[6]],
-                [self.vertices[1], self.vertices[6], self.vertices[5]],
-                
-                # Esquerda
-                [self.vertices[3], self.vertices[0], self.vertices[4]],
-                [self.vertices[3], self.vertices[4], self.vertices[7]],
-            ]
+            n_vertices = len(self.vertices)
+
+            # Caso padrão com apenas 8 vértices
+            if n_vertices == 8:
+                self.faces = [
+                    [0, 1, 2], [0, 2, 3],       # Base inferior
+                    [4, 5, 6], [4, 6, 7],       # Base superior
+                    [0, 1, 5], [0, 5, 4],       # Frente
+                    [2, 3, 7], [2, 7, 6],       # Trás
+                    [1, 2, 6], [1, 6, 5],       # Direita
+                    [3, 0, 4], [3, 4, 7],       # Esquerda
+                ]
+            else:
+                # Supondo que foi gerado com subdivisões regulares
+                # Recupera a resolução (raiz cúbica do número de pontos aproximadamente)
+                resolucao = round((n_vertices) ** (1 / 3)) - 1
+
+                def idx(i, j, k):
+                    return k * (resolucao + 1)**2 + j * (resolucao + 1) + i
+
+                for k in range(resolucao + 1):
+                    for j in range(resolucao):
+                        for i in range(resolucao):
+                            # base inferior (k=0)
+                            if k == 0:
+                                v0 = idx(i, j, k)
+                                v1 = idx(i + 1, j, k)
+                                v2 = idx(i + 1, j + 1, k)
+                                v3 = idx(i, j + 1, k)
+                                self.faces.append([v0, v1, v2])
+                                self.faces.append([v0, v2, v3])
+                            # base superior (k=res)
+                            if k == resolucao:
+                                v0 = idx(i, j, k)
+                                v1 = idx(i + 1, j, k)
+                                v2 = idx(i + 1, j + 1, k)
+                                v3 = idx(i, j + 1, k)
+                                self.faces.append([v0, v2, v1])
+                                self.faces.append([v0, v3, v2])
+
+                # faces laterais
+                for k in range(resolucao):
+                    for j in range(resolucao + 1):
+                        for i in range(resolucao):
+                            # lateral y=0 (frente)
+                            if j == 0:
+                                v0 = idx(i, j, k)
+                                v1 = idx(i + 1, j, k)
+                                v2 = idx(i + 1, j, k + 1)
+                                v3 = idx(i, j, k + 1)
+                                self.faces.append([v0, v1, v2])
+                                self.faces.append([v0, v2, v3])
+                            # lateral y=max (trás)
+                            if j == resolucao:
+                                v0 = idx(i, j, k)
+                                v1 = idx(i + 1, j, k)
+                                v2 = idx(i + 1, j, k + 1)
+                                v3 = idx(i, j, k + 1)
+                                self.faces.append([v0, v2, v1])
+                                self.faces.append([v0, v3, v2])
+                    for i in range(resolucao + 1):
+                        for j in range(resolucao):
+                            # lateral x=0 (esquerda)
+                            if i == 0:
+                                v0 = idx(i, j, k)
+                                v1 = idx(i, j + 1, k)
+                                v2 = idx(i, j + 1, k + 1)
+                                v3 = idx(i, j, k + 1)
+                                self.faces.append([v0, v1, v2])
+                                self.faces.append([v0, v2, v3])
+                            # lateral x=max (direita)
+                            if i == resolucao:
+                                v0 = idx(i, j, k)
+                                v1 = idx(i, j + 1, k)
+                                v2 = idx(i, j + 1, k + 1)
+                                v3 = idx(i, j, k + 1)
+                                self.faces.append([v0, v2, v1])
+                                self.faces.append([v0, v3, v2])
 
         elif self.forma == "reta":
-            self.faces = [
-                [self.vertices[0], self.vertices[1], self.vertices[1]]  
-            ]
+            self.faces = [[0, 1, 1]]  # apenas para visualização
 
         elif self.forma == "cilindro":
-            altura = self.vertices[1][2]  # altura do topo
             for i in range(self.resolucao):
                 i_base = i * 2
                 i_topo = i_base + 1
                 i_base_next = (i_base + 2) % (self.resolucao * 2)
                 i_topo_next = (i_base_next + 1) % (self.resolucao * 2)
 
-                # Lateral
-                self.faces.append([self.vertices[i_base], self.vertices[i_base_next], self.vertices[i_topo_next]])
-                self.faces.append([self.vertices[i_base], self.vertices[i_topo_next], self.vertices[i_topo]])
+                self.faces.append([i_base, i_base_next, i_topo_next])
+                self.faces.append([i_base, i_topo_next, i_topo])
 
-                # Tampa inferior (base)
-                self.faces.append([self.vertices[self.base_center_index],
-                                   self.vertices[i_base_next],
-                                   self.vertices[i_base]])
-
-                # Tampa superior (topo)
-                self.faces.append([self.vertices[self.top_center_index],
-                                   self.vertices[i_topo],
-                                   self.vertices[i_topo_next]])
+                self.faces.append([self.base_center_index, i_base_next, i_base])
+                self.faces.append([self.top_center_index, i_topo, i_topo_next])
 
         elif self.forma == "cano_reto":
             for i in range(self.resolucao):
@@ -74,56 +118,74 @@ class Objeto3D:
                 i2 = ((i + 1) % self.resolucao) * 4
 
                 # Lateral externa
-                self.faces.append([self.vertices[i1], self.vertices[i2], self.vertices[i2 + 1]])
-                self.faces.append([self.vertices[i1], self.vertices[i2 + 1], self.vertices[i1 + 1]])
+                self.faces.append([i1, i2, i2 + 1])
+                self.faces.append([i1, i2 + 1, i1 + 1])
 
                 # Lateral interna (invertida)
-                self.faces.append([self.vertices[i1 + 2], self.vertices[i2 + 3], self.vertices[i2 + 2]])
-                self.faces.append([self.vertices[i1 + 2], self.vertices[i1 + 3], self.vertices[i2 + 3]])
+                self.faces.append([i1 + 2, i2 + 3, i2 + 2])
+                self.faces.append([i1 + 2, i1 + 3, i2 + 3])
 
                 # Tampa inferior
-                self.faces.append([self.vertices[i1], self.vertices[i1 + 2], self.vertices[i2 + 2]])
-                self.faces.append([self.vertices[i1], self.vertices[i2 + 2], self.vertices[i2]])
+                self.faces.append([i1, i1 + 2, i2 + 2])
+                self.faces.append([i1, i2 + 2, i2])
 
                 # Tampa superior
-                self.faces.append([self.vertices[i1 + 1], self.vertices[i2 + 1], self.vertices[i2 + 3]])
-                self.faces.append([self.vertices[i1 + 1], self.vertices[i2 + 3], self.vertices[i1 + 3]])
-
+                self.faces.append([i1 + 1, i2 + 1, i2 + 3])
+                self.faces.append([i1 + 1, i2 + 3, i1 + 3])
+                
         elif self.forma == "cano_curvado":
-            for i in range(self.resolucao_curva - 1):
-                for j in range(self.resolucao_circular):
-                    i1 = i * self.resolucao_circular + j
-                    i2 = i * self.resolucao_circular + (j + 1) % self.resolucao_circular
-                    i3 = (i + 1) * self.resolucao_circular + j
-                    i4 = (i + 1) * self.resolucao_circular + (j + 1) % self.resolucao_circular
+            rc = self.resolucao_circular
+            rcv = self.resolucao_curva
 
-                    self.faces.append([self.vertices[i1], self.vertices[i3], self.vertices[i4]])
-                    self.faces.append([self.vertices[i1], self.vertices[i4], self.vertices[i2]])    
-        
-        
-        
-    def modelar_paralelepipedo(self, base, altura, comprimento):
+            for i in range(rcv - 1):
+                for j in range(rc):
+                    # índice dos vértices externos
+                    i_ext1 = i * rc * 2 + j * 2
+                    i_ext2 = i * rc * 2 + ((j + 1) % rc) * 2
+                    i_ext3 = (i + 1) * rc * 2 + j * 2
+                    i_ext4 = (i + 1) * rc * 2 + ((j + 1) % rc) * 2
+
+                    # índice dos vértices internos
+                    i_int1 = i_ext1 + 1
+                    i_int2 = i_ext2 + 1
+                    i_int3 = i_ext3 + 1
+                    i_int4 = i_ext4 + 1
+
+                    # Faces externas
+                    self.faces.append([i_ext1, i_ext3, i_ext4])
+                    self.faces.append([i_ext1, i_ext4, i_ext2])
+
+                    # Faces internas (invertidas)
+                    self.faces.append([i_int4, i_int3, i_int1])
+                    self.faces.append([i_int2, i_int4, i_int1])
+
+                    # Faces laterais (ligando externo ao interno)
+                    self.faces.append([i_ext1, i_int1, i_int3])
+                    self.faces.append([i_ext1, i_int3, i_ext3])
+
+                    self.faces.append([i_int4, i_int2, i_ext2])
+                    self.faces.append([i_int4, i_ext2, i_ext4])
+            
+            
+            
+    def modelar_paralelepipedo(self, base, altura, comprimento, resolucao=1):
         """
-        Modela um paralelepípedo (hiper retângulo) com base (x), altura (z) e comprimento (y).
-        Retorna listas de vértices e faces triangulares.
+        Modela um paralelepípedo subdividido com base (x), comprimento (y) e altura (z).
+        O parâmetro 'resolucao' define quantas subdivisões por eixo (mínimo 1).
         """
         self.forma = "paralelepipedo"
         self.vertices = []
         self.faces = []
-        
-        # Vértices inferiores (z = 0)
-        self.vertices.append([0, 0, 0])                         # v0
-        self.vertices.append([base, 0, 0])                      # v1
-        self.vertices.append([base, comprimento, 0])            # v2
-        self.vertices.append([0, comprimento, 0])               # v3
 
-        # Vértices superiores (z = altura)
-        self.vertices.append([0, 0, altura])                    # v4
-        self.vertices.append([base, 0, altura])                 # v5
-        self.vertices.append([base, comprimento, altura])       # v6
-        self.vertices.append([0, comprimento, altura])          # v7
+        # Cria grid 3D de pontos
+        for k in range(resolucao + 1):  # eixo z (altura)
+            z = (k / resolucao) * altura
+            for j in range(resolucao + 1):  # eixo y (comprimento)
+                y = (j / resolucao) * comprimento
+                for i in range(resolucao + 1):  # eixo x (base)
+                    x = (i / resolucao) * base
+                    self.vertices.append([x, y, z])
 
-        # Define as 6 faces (2 triângulos por face)
         self.atribuir_faces()
         
         
@@ -199,48 +261,30 @@ class Objeto3D:
             self.vertices.append([x_in, y_in, 0])           # base interna
             self.vertices.append([x_in, y_in, altura])      # topo interna
 
-        for i in range(self.resolucao):
-            i1 = i * 4
-            i2 = ((i + 1) % self.resolucao) * 4
-
-            # Lateral externa
-            self.faces.append([self.vertices[i1], self.vertices[i2], self.vertices[i2 + 1]])
-            self.faces.append([self.vertices[i1], self.vertices[i2 + 1], self.vertices[i1 + 1]])
-
-            # Lateral interna (invertida)
-            self.faces.append([self.vertices[i1 + 2], self.vertices[i2 + 3], self.vertices[i2 + 2]])
-            self.faces.append([self.vertices[i1 + 2], self.vertices[i1 + 3], self.vertices[i2 + 3]])
-
-            # Tampa inferior
-            self.faces.append([self.vertices[i1], self.vertices[i1 + 2], self.vertices[i2 + 2]])
-            self.faces.append([self.vertices[i1], self.vertices[i2 + 2], self.vertices[i2]])
-
-            # Tampa superior
-            self.faces.append([self.vertices[i1 + 1], self.vertices[i2 + 1], self.vertices[i2 + 3]])
-            self.faces.append([self.vertices[i1 + 1], self.vertices[i2 + 3], self.vertices[i1 + 3]])
+        
         self.atribuir_faces()
         
         
-    def gerar_cano_curvado(self, P0, P1, T0, T1, raio=0.2, resolucao_circular=16, resolucao_curva=100):
+    def gerar_cano_curvado(self, P0, P1, T0, T1, raio_externo=0.2, raio_interno=0.15, resolucao_circular=16, resolucao_curva=100):
         self.resolucao_circular = resolucao_circular
         self.resolucao_curva = resolucao_curva
         self.forma = "cano_curvado"
         self.vertices = []
         self.faces = []
-        
+
         curva = curva_hermite(P0, P1, T0, T1, self.resolucao_curva)
 
         for i in range(self.resolucao_curva):
             ponto = curva[i]
 
-            # Aproximação da tangente para plano local
+            # Tangente da curva
             if i < self.resolucao_curva - 1:
                 direcao = curva[i + 1] - curva[i]
             else:
                 direcao = curva[i] - curva[i - 1]
             direcao = direcao / np.linalg.norm(direcao)
 
-            # Vetores ortogonais à direção (plano normal)
+            # Vetores ortogonais ao plano
             if np.allclose(direcao, [0, 0, 1]):
                 orto1 = np.cross(direcao, [1, 0, 0])
             else:
@@ -248,25 +292,16 @@ class Objeto3D:
             orto1 = orto1 / np.linalg.norm(orto1)
             orto2 = np.cross(direcao, orto1)
 
-            # Gera círculo ao redor do ponto da curva
-            for j in range(self.resolucao_circular):
-                ang = 2 * np.pi * j / self.resolucao_circular
-                desloc = raio * (np.cos(ang) * orto1 + np.sin(ang) * orto2)
-                vertice = ponto + desloc
-                self.vertices.append(vertice.tolist())
+            for j in range(resolucao_circular):
+                ang = 2 * np.pi * j / resolucao_circular
+                desloc_ext = raio_externo * (np.cos(ang) * orto1 + np.sin(ang) * orto2)
+                desloc_int = raio_interno * (np.cos(ang) * orto1 + np.sin(ang) * orto2)
 
-        # Conecta os anéis de pontos com self.faces triangulares
-        for i in range(self.resolucao_curva - 1):
-            for j in range(self.resolucao_circular):
-                i1 = i * self.resolucao_circular + j
-                i2 = i * self.resolucao_circular + (j + 1) % self.resolucao_circular
-                i3 = (i + 1) * self.resolucao_circular + j
-                i4 = (i + 1) * self.resolucao_circular + (j + 1) % self.resolucao_circular
+                self.vertices.append((ponto + desloc_ext).tolist())  # externo
+                self.vertices.append((ponto + desloc_int).tolist())  # interno
 
-                # Dois triângulos por "quadrado"
-                self.faces.append([self.vertices[i1], self.vertices[i3], self.vertices[i4]])
-                self.faces.append([self.vertices[i1], self.vertices[i4], self.vertices[i2]])
         self.atribuir_faces()
+
         
 
     def aplicar_escala(self, sx, sy, sz):
