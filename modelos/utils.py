@@ -2,32 +2,26 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d.art3d import Poly3DCollection
 import numpy as np
 
-def plotar_malha_3d(vertices, faces, titulo="Objeto 3D", cor="orange", borda="black", alpha=0.9, linewidth=0.3):
+def plotar_malha_3d(vertices, faces, titulo="Objeto 3D", cor="orange", borda="black", alpha=0.9, linewidth=0.3,
+                    ponto_destaque=None, eixos=None, vetor_olhar=None):
     """
-    Plota uma malha 3D composta por vértices e faces triangulares.
+    Plota uma malha 3D com destaques opcionais.
 
-    Parâmetros:
-    - vertices: lista de vértices [x, y, z]
-    - faces: lista de triângulos [[v1, v2, v3], ...]
-    - titulo: título do gráfico
-    - cor: cor da face
-    - borda: cor da borda (edge)
-    - alpha: transparência da malha
-    - linewidth: espessura da linha da borda
+    - ponto_destaque: ponto especial para marcar (ex: origem do mundo).
+    - eixos: dicionário com vetores u, v, w.
+    - vetor_olhar: tupla (origem, destino) para desenhar vetor de olhar da câmera.
     """
     fig = plt.figure(figsize=(8, 6))
     ax = fig.add_subplot(111, projection='3d')
 
-    # Malha como coleção de polígonos
     mesh = Poly3DCollection(faces, facecolor=cor, edgecolor=borda, linewidths=linewidth, alpha=alpha)
     ax.add_collection3d(mesh)
 
-    # Limites automáticos com margens
     x_vals = [v[0] for v in vertices]
     y_vals = [v[1] for v in vertices]
     z_vals = [v[2] for v in vertices]
 
-    margem = 0.2
+    margem = 0.5
     ax.set_xlim([min(x_vals) - margem, max(x_vals) + margem])
     ax.set_ylim([min(y_vals) - margem, max(y_vals) + margem])
     ax.set_zlim([min(z_vals) - margem, max(z_vals) + margem])
@@ -36,6 +30,27 @@ def plotar_malha_3d(vertices, faces, titulo="Objeto 3D", cor="orange", borda="bl
     ax.set_ylabel("Y")
     ax.set_zlabel("Z")
     ax.set_title(titulo)
+
+    if ponto_destaque:
+        ax.scatter(*ponto_destaque, color='red', s=50)
+        ax.text(*ponto_destaque, "Origem do Mundo", color='red')
+
+    if eixos:
+        origem = [0, 0, 0]
+        u, v, w = eixos['u'], eixos['v'], eixos['w']
+        ax.quiver(*origem, *u, length=1.0, color='blue', normalize=True)
+        ax.text(*u, "u", color='blue')
+        ax.quiver(*origem, *v, length=1.0, color='green', normalize=True)
+        ax.text(*v, "v", color='green')
+        ax.quiver(*origem, *w, length=1.0, color='red', normalize=True)
+        ax.text(*w, "w", color='red')
+
+    # Desenhar vetor de olhar da câmera
+    if vetor_olhar:
+        origem, destino = vetor_olhar
+        direcao = np.array(destino) - np.array(origem)
+        ax.quiver(*origem, *direcao, length=1.0, color='purple', normalize=True)
+        ax.text(*destino, "Olhar", color='purple')
 
     plt.tight_layout()
     plt.show()
@@ -53,112 +68,30 @@ def curva_hermite(P0, P1, T0, T1, n=100):
     H = h00 * P0 + h10 * T0 + h01 * P1 + h11 * T1
     return H
 
-def transformar_vertices(vertices, escala=1.0, rotacao=np.eye(3), translacao=np.zeros(3)):
-    """
-    Aplica transformações (escala, rotação e translação) a uma lista de vértices.
-    - vertices: lista de [x, y, z]
-    - escala: escalar ou vetor 3D
-    - rotacao: matriz 3x3
-    - translacao: vetor 3D
-    """
-    novos_vertices = []
-    for v in vertices:
-        v = np.array(v)
-        v = v * escala
-        v = rotacao @ v
-        v = v + translacao
-        novos_vertices.append(v.tolist())
-    return novos_vertices
 
 
-def normalizar_cena(vertices, limite=10.0):
+def normalizar_cena(vertices, limite=10.0, modo='uniforme'):
     """
-    Garante que todos os vértices da cena estejam dentro do cubo [-limite, limite] em qualquer eixo.
+    Normaliza os vértices para que caibam no intervalo [-limite, limite].
     
     Parâmetros:
     - vertices: lista de vértices [x, y, z]
-    - limite: valor máximo permitido para qualquer coordenada (padrão: 10.0)
-    
-    Retorna:
-    - Lista de vértices normalizados (escalados para caber no limite)
+    - limite: valor máximo em cada eixo
+    - modo: 'uniforme' (mesmo fator para todos) ou 'por_eixo' (distorce para caber)
     """
-    max_val = np.max(np.abs(vertices))  # maior valor absoluto em qualquer eixo
-    if max_val > limite:
-        fator = limite / max_val
-        print(f"[INFO] Normalizando cena com fator {fator:.3f}")
-        return [ (np.array(v) * fator).tolist() for v in vertices ]
-    return vertices  # já está dentro do limite
-
-
-def aplicar_escala(vertices, sx, sy, sz):
-    """
-    Aplica escala nos vértices de um objeto 3D.
-    
-    Parâmetros:
-    - vertices: lista de vértices [[x, y, z], ...]
-    - sx, sy, sz: fatores de escala nos eixos X, Y e Z
-    """
-    matriz_escala = np.array([
-        [sx,  0,  0],
-        [0,  sy,  0],
-        [0,   0, sz]
-    ])
-
-    vertices_escalados = [matriz_escala @ np.array(v) for v in vertices]
-    return vertices_escalados
-
-def aplicar_translacao(vertices, indice_vertice, destino):
-    """
-    Translada todos os vértices de um objeto 3D para que
-    o vértice de índice `indice_vertice` vá para a posição `destino`.
-
-    Parâmetros:
-    - vertices: lista de vértices [[x, y, z], ...]
-    - indice_vertice: índice do vértice de referência a ser movido
-    - destino: coordenadas [dx, dy, dz] para onde o vértice deve ir
-    """
-    origem = np.array(vertices[indice_vertice])
-    destino = np.array(destino)
-    deslocamento = destino - origem
-
-    vertices_transladados = [np.array(v) + deslocamento for v in vertices]
-    return vertices_transladados
-
-
-def aplicar_rotacao(vertices, eixo, angulo_graus):
-    """
-    Rotaciona os vértices de um objeto 3D em torno do eixo especificado.
-
-    Parâmetros:
-    - vertices: lista de vértices [[x, y, z], ...]
-    - eixo: 'x', 'y' ou 'z'
-    - angulo_graus: ângulo de rotação em graus
-    """
-    ang = np.radians(angulo_graus)
-
-    if eixo == 'x':
-        matriz_rot = np.array([
-            [1, 0, 0],
-            [0, np.cos(ang), -np.sin(ang)],
-            [0, np.sin(ang),  np.cos(ang)]
-        ])
-    elif eixo == 'y':
-        matriz_rot = np.array([
-            [np.cos(ang), 0, np.sin(ang)],
-            [0, 1, 0],
-            [-np.sin(ang), 0, np.cos(ang)]
-        ])
-    elif eixo == 'z':
-        matriz_rot = np.array([
-            [np.cos(ang), -np.sin(ang), 0],
-            [np.sin(ang),  np.cos(ang), 0],
-            [0, 0, 1]
-        ])
-    else:
-        raise ValueError("Eixo inválido. Use 'x', 'y' ou 'z'.")
-
-    vertices_rotacionados = [matriz_rot @ np.array(v) for v in vertices]
-    return vertices_rotacionados
+    verts_np = np.array(vertices)
+    if modo == 'uniforme':
+        max_val = np.max(np.abs(verts_np))
+        if max_val > limite:
+            fator = limite / max_val
+            print(f"[INFO] Normalizando cena (uniforme) com fator {fator:.3f}")
+            return (verts_np * fator).tolist()
+        return vertices
+    elif modo == 'por_eixo':
+        max_vals = np.max(np.abs(verts_np), axis=0)
+        fatores = np.where(max_vals != 0, limite / max_vals, 1.0)
+        print(f"[INFO] Normalizando cena (por eixo) com fatores: x={fatores[0]:.3f}, y={fatores[1]:.3f}, z={fatores[2]:.3f}")
+        return (verts_np * fatores).tolist()
 
 
 def normalizar_solido(vertices, destino=[0, 0, 0], limite=10):
@@ -193,30 +126,44 @@ def normalizar_solido(vertices, destino=[0, 0, 0], limite=10):
 
     return final.tolist()
 
-def faces_para_indices(faces_em_vertices, lista_vertices_transformados, tolerancia=1e-6):
+
+def projetar_perspectiva(vertices, d=5.0):
     """
-    Converte faces definidas por vértices em faces por índices,
-    comparando com a lista de vértices transformados usando np.allclose.
-
-    faces_em_vertices: List[List[List[float]]]
-    lista_vertices_transformados: List[List[float]]
+    Aplica projeção perspectiva nos vértices.
     """
-    faces_com_indices = []
+    vertices_proj = []
+    for x, y, z in vertices:
+        denom = z + d if z + d != 0 else 1e-5  # evita divisão por zero
+        x_proj = (x * d) / denom
+        y_proj = (y * d) / denom
+        vertices_proj.append([x_proj, y_proj])
+    return vertices_proj
 
-    lista_vertices_np = [np.array(v) for v in lista_vertices_transformados]
 
-    for face in faces_em_vertices:
-        indices = []
-        for vertice in face:
-            vertice = np.array(vertice)
-            encontrado = False
-            for i, v_ref in enumerate(lista_vertices_np):
-                if np.allclose(vertice, v_ref, atol=tolerancia):
-                    indices.append(i)
-                    encontrado = True
-                    break
-            if not encontrado:
-                raise ValueError(f"Vértice {vertice.tolist()} não encontrado na lista transformada.")
-        faces_com_indices.append(indices)
+def desenhar_em_2d(lista_vertices, lista_faces, cores):
+    """
+    Recebe listas de vértices e faces por objeto e plota em 2D.
+    Cada objeto recebe uma cor da lista cores.
+    """
+    fig, ax = plt.subplots(figsize=(8, 8))
 
-    return faces_com_indices
+    for i, (verts, faces) in enumerate(zip(lista_vertices, lista_faces)):
+        cor = cores[i % len(cores)]
+        proj_verts = projetar_perspectiva(verts)
+
+        for face in faces:
+            pts = []
+            for v in face:
+                for j, original in enumerate(verts):
+                    if np.allclose(original, v):
+                        pts.append(proj_verts[j])
+                        break
+            if len(pts) >= 2:
+                pts.append(pts[0])  # fechar o polígono
+                xs, ys = zip(*pts)
+                ax.plot(xs, ys, color=cor, linewidth=1)
+
+    ax.set_aspect('equal')
+    ax.set_title("Projeção Perspectiva 2D dos Sólidos")
+    plt.grid(True)
+    plt.show()

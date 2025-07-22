@@ -58,11 +58,15 @@ class Objeto3D:
                 self.faces.append([self.vertices[i_base], self.vertices[i_base_next], self.vertices[i_topo_next]])
                 self.faces.append([self.vertices[i_base], self.vertices[i_topo_next], self.vertices[i_topo]])
 
-                # Tampa inferior
-                self.faces.append([[0, 0, 0], self.vertices[i_base_next], self.vertices[i_base]])
+                # Tampa inferior (base)
+                self.faces.append([self.vertices[self.base_center_index],
+                                   self.vertices[i_base_next],
+                                   self.vertices[i_base]])
 
-                # Tampa superior
-                self.faces.append([[0, 0, altura], self.vertices[i_topo], self.vertices[i_topo_next]])
+                # Tampa superior (topo)
+                self.faces.append([self.vertices[self.top_center_index],
+                                   self.vertices[i_topo],
+                                   self.vertices[i_topo_next]])
 
         elif self.forma == "cano_reto":
             for i in range(self.resolucao):
@@ -163,24 +167,15 @@ class Objeto3D:
             y = raio * sin_t
 
             self.vertices.append([x, y, 0])         # base
-            self.vertices.append([x, y, altura])    # topo
+            self.vertices.append([x, y, altura])    # top
+            
+        # Adiciona vértices centrais para base e topo
+        self.base_center_index = len(self.vertices)
+        self.vertices.append([0, 0, 0])  # centro da base
 
-        # Conecta laterais e tampas
-        for i in range(self.resolucao):
-            i_base = i * 2
-            i_topo = i_base + 1
-            i_base_next = (i_base + 2) % (self.resolucao * 2)
-            i_topo_next = (i_base_next + 1) % (self.resolucao * 2)
+        self.top_center_index = len(self.vertices)
+        self.vertices.append([0, 0, altura])
 
-            # Lateral
-            self.faces.append([self.vertices[i_base], self.vertices[i_base_next], self.vertices[i_topo_next]])
-            self.faces.append([self.vertices[i_base], self.vertices[i_topo_next], self.vertices[i_topo]])
-
-            # Tampa inferior
-            self.faces.append([[0, 0, 0], self.vertices[i_base_next], self.vertices[i_base]])
-
-            # Tampa superior
-            self.faces.append([[0, 0, altura], self.vertices[i_topo], self.vertices[i_topo_next]])
         self.atribuir_faces()
         
     def modelar_cano_reto(self, raio_interno, raio_externo, altura, resolucao=32):
@@ -274,9 +269,22 @@ class Objeto3D:
         self.atribuir_faces()
         
 
-    def aplicar_escala(self, fator):
-        self.vertices = [np.array(v) for v in self.vertices]  # Garante np.array
-        self.vertices = [v * fator for v in self.vertices]
+    def aplicar_escala(self, sx, sy, sz):
+        """
+        Aplica escala nos vértices de um objeto 3D.
+        
+        Parâmetros:
+        - vertices: lista de vértices [[x, y, z], ...]
+        - sx, sy, sz: fatores de escala nos eixos X, Y e Z
+        """
+        matriz_escala = np.array([
+            [sx,  0,  0],
+            [0,  sy,  0],
+            [0,   0, sz]
+        ])
+
+        vertices_escalados = [matriz_escala @ np.array(v) for v in self.vertices]
+        self.vertices = vertices_escalados
     
     def aplicar_translacao(self, deslocamento):
         deslocamento = np.array(deslocamento)
