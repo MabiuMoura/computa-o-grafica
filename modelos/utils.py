@@ -100,3 +100,49 @@ def normalizar_cena(vertices, limite=10.0, modo='uniforme'):
         fatores = np.where(max_vals != 0, limite / max_vals, 1.0)
         print(f"[INFO] Normalizando cena (por eixo) com fatores: x={fatores[0]:.3f}, y={fatores[1]:.3f}, z={fatores[2]:.3f}")
         return (verts_np * fatores).tolist()
+
+
+import plotly.graph_objects as go
+import numpy as np
+
+def plotar_malhas_interativas(objetos, titulo="Cena 3D Interativa"):
+    """
+    Plota múltiplas malhas 3D de forma interativa usando Plotly.
+    
+    Parâmetros:
+    - objetos: lista de tuplas no formato (vertices, faces, cor, nome)
+    - titulo: título do gráfico
+    """
+    fig = go.Figure()
+
+    for vertices, faces, cor, nome in objetos:
+        vertices = np.array(vertices)
+        faces = np.array(faces)
+
+        # Separar coordenadas
+        x, y, z = vertices[:, 0], vertices[:, 1], vertices[:, 2]
+        i, j, k = faces[:, 0], faces[:, 1], faces[:, 2]
+
+        fig.add_trace(go.Mesh3d(
+            x=x, y=y, z=z,
+            i=i, j=j, k=k,
+            color=cor,
+            opacity=0.7,
+            name=nome,
+            hoverinfo='skip'
+        ))
+
+    fig.update_layout(
+        title=titulo,
+        scene=dict(
+            xaxis=dict(title="X"),
+            yaxis=dict(title="Y"),
+            zaxis=dict(title="Z"),
+            aspectmode='data'
+        ),
+        width=800,
+        height=700,
+        showlegend=True
+    )
+
+    fig.show()
