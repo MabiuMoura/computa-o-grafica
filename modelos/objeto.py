@@ -10,8 +10,6 @@ class Objeto3D:
         self.resolucao = None
         self.resolucao_circular = None
         self.resolucao_curva = None
-        self.faces_externas = []
-        self.faces_internas = []
     
     def atribuir_faces(self):
         self.faces = []
