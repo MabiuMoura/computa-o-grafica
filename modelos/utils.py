@@ -103,7 +103,6 @@ def normalizar_cena(vertices, limite=10.0, modo='uniforme'):
 
 
 import plotly.graph_objects as go
-import numpy as np
 
 def plotar_malhas_interativas(objetos, titulo="Cena 3D Interativa"):
     """
